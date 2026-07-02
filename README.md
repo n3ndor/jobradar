@@ -1,10 +1,14 @@
 # JobRadar
 
-Automated job-market intelligence. A Python pipeline pulls remote job postings from
-public APIs every 6 hours, enriches them with an LLM into structured data, and a
-Next.js dashboard surfaces market trends you cannot see by scrolling job boards.
+Automated tech-job market intelligence. A Python pipeline pulls postings from
+public job APIs every 6 hours, enriches them into structured data, and a Next.js
+dashboard surfaces market trends you cannot see by scrolling job boards.
 
-**Live:** _coming soon at jobradar.nagysolution.com_
+Scope, stated up front: **tech roles only** — engineering, data, design, and
+product. A shared title filter enforces this across every source, so the feed
+never surprises anyone with sales or accounting jobs.
+
+**Live:** [jobradar.nagysolution.com](https://jobradar.nagysolution.com)
 
 ## Architecture
 
@@ -97,7 +101,8 @@ full run.
 
 - [x] Milestone 1: scaffold + ingestion (dedupe, cron, feed)
 - [x] Milestone 2: 3 sources incl. Greenhouse, two-layer enrichment, filter/search/sort UI
-- [ ] Remaining: `/job` detail (raw vs. extracted), `/pipeline` observability, `/trends` charts, more sources, tests
+- [x] Milestone 3: `/trends` charts, `/pipeline` observability, `/job` raw-vs-extracted detail, tech-only scope filter
+- [ ] Remaining: more sources (HN "Who is hiring", RemoteOK, WWR), Python tests, OG image, launch post
 
 Built by [Nandor Nagy](https://github.com/n3ndor). Part of a public portfolio; the
 pipeline observability page intentionally shows the machinery instead of hiding it.

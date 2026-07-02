@@ -16,6 +16,7 @@ from datetime import datetime
 import httpx
 
 from ..models import RawPosting
+from ..tech_filter import TECH_TITLE
 
 # Verified live boards (probed against the API). Add tokens here to widen coverage.
 BOARDS = [
@@ -27,17 +28,6 @@ BOARDS = [
 PER_BOARD_LIMIT = 40
 CONCURRENCY = 6
 
-TECH_TITLE = re.compile(
-    r"\b("
-    r"engineer|developer|software|programmer|sre|devops|"
-    r"data\s*(scientist|engineer|analyst)|machine\s*learning|ml\b|ai\b|"
-    r"backend|back-end|frontend|front-end|full\s*stack|fullstack|"
-    r"infrastructure|platform|security|cloud|mobile|ios|android|"
-    r"designer|design\b|product\s*manager|architect|qa\b|"
-    r"analytics|scientist|research"
-    r")",
-    re.IGNORECASE,
-)
 TAG_RE = re.compile(r"<[^>]+>")
 
 

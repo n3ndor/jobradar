@@ -54,10 +54,11 @@ export default async function FeedPage() {
   return (
     <main id="main" className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Remote job feed</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Tech job feed</h1>
         <p className="mt-1 text-sm text-muted">
-          Postings from public job APIs, deduplicated and tagged by region, remote
-          policy, seniority, and tech stack.
+          Engineering, data, design, and product roles from public job APIs,
+          deduplicated and tagged by region, remote policy, seniority, and stack.
+          No other industries — this radar only tracks tech.
           {result.state === "ok" && result.total > 0 && (
             <span className="ml-1 font-mono text-xs text-faint">
               {result.total.toLocaleString("en-US")} tracked

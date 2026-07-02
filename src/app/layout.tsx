@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "JobRadar",
+    default: "JobRadar — tech job market intelligence",
     template: "%s | JobRadar",
   },
   description:
-    "Automated job-market intelligence. Remote postings from public APIs, enriched with AI into structured, filterable market data.",
+    "Automated tech-job market intelligence. Engineering, data, design, and product roles from public APIs, enriched into structured, filterable market data.",
 };
 
 function RadarMark() {
@@ -42,8 +42,8 @@ function RadarMark() {
 
 const NAV = [
   { href: "/", label: "Feed", live: true },
-  { href: "/trends", label: "Trends", live: false },
-  { href: "/pipeline", label: "Pipeline", live: false },
+  { href: "/trends", label: "Trends", live: true },
+  { href: "/pipeline", label: "Pipeline", live: true },
 ];
 
 export default function RootLayout({
@@ -107,8 +107,9 @@ export default function RootLayout({
         <footer className="border-t border-border">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-faint">
             <p>
-              Data from public APIs: Remotive, Arbeitnow. Refreshed every 6 hours
-              by an automated pipeline.
+              Tech roles only: engineering, data, design, and product. Data from
+              public APIs (Remotive, Arbeitnow, Greenhouse boards), refreshed
+              every 6 hours by an automated pipeline.
             </p>
             <p>
               <a

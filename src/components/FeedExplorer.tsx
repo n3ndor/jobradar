@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { Posting } from "@/lib/types";
 import { relativeTime } from "@/lib/format";
 
@@ -224,62 +225,70 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
             {filtered.slice(0, RENDER_CAP).map((posting) => (
-              <li key={posting.id}>
-                <a
-                  href={posting.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-surface-raised"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium leading-snug transition-colors group-hover:text-accent">
-                      {posting.title}
-                    </span>
-                    <time
-                      dateTime={posting.first_seen_at}
-                      className="shrink-0 font-mono text-xs text-faint"
-                    >
-                      {relativeTime(posting.first_seen_at)}
-                    </time>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                    <span className="text-foreground/80">{posting.company}</span>
-                    {posting.enrichments?.region && posting.enrichments.region !== "Unknown" && (
-                      <>
-                        <span aria-hidden className="text-faint">·</span>
-                        <span>{posting.enrichments.region}</span>
-                      </>
-                    )}
-                    {posting.enrichments?.remote_policy &&
-                      posting.enrichments.remote_policy !== "unknown" && (
-                        <span className="rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">
-                          {posting.enrichments.remote_policy}
-                        </span>
-                      )}
-                    {posting.enrichments?.seniority && (
-                      <span className="rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">
-                        {posting.enrichments.seniority}
-                      </span>
-                    )}
-                    {posting.sources?.name && (
-                      <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-faint">
-                        {posting.sources.name}
-                      </span>
-                    )}
-                  </div>
-                  {(posting.enrichments?.stack?.length ?? 0) > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {posting.enrichments!.stack!.slice(0, 8).map((s) => (
-                        <span
-                          key={s}
-                          className="rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] text-accent/80"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
+              <li
+                key={posting.id}
+                className="group relative flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-surface-raised"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <Link
+                    href={`/job/${posting.id}`}
+                    className="font-medium leading-snug transition-colors group-hover:text-accent after:absolute after:inset-0 after:content-['']"
+                  >
+                    {posting.title}
+                  </Link>
+                  <time
+                    dateTime={posting.first_seen_at}
+                    className="shrink-0 font-mono text-xs text-faint"
+                  >
+                    {relativeTime(posting.first_seen_at)}
+                  </time>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                  <span className="text-foreground/80">{posting.company}</span>
+                  {posting.enrichments?.region && posting.enrichments.region !== "Unknown" && (
+                    <>
+                      <span aria-hidden className="text-faint">·</span>
+                      <span>{posting.enrichments.region}</span>
+                    </>
                   )}
-                </a>
+                  {posting.enrichments?.remote_policy &&
+                    posting.enrichments.remote_policy !== "unknown" && (
+                      <span className="rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">
+                        {posting.enrichments.remote_policy}
+                      </span>
+                    )}
+                  {posting.enrichments?.seniority && (
+                    <span className="rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">
+                      {posting.enrichments.seniority}
+                    </span>
+                  )}
+                  {posting.sources?.name && (
+                    <span className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] text-faint">
+                      {posting.sources.name}
+                    </span>
+                  )}
+                  <a
+                    href={posting.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative z-10 ml-auto text-xs text-faint underline decoration-border-strong underline-offset-2 hover:text-accent"
+                    aria-label={`Original posting for ${posting.title} at ${posting.company}`}
+                  >
+                    original ↗
+                  </a>
+                </div>
+                {(posting.enrichments?.stack?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {posting.enrichments!.stack!.slice(0, 8).map((s) => (
+                      <span
+                        key={s}
+                        className="rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] text-accent/80"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -18,6 +18,7 @@ from .config import load_env
 from .enrichment import MAX_PER_RUN as LLM_PER_RUN, enrich_with_llm
 from .models import RawPosting, RunMetrics, SourceResult
 from .sources import ALL_SOURCES
+from .tech_filter import is_tech_role
 
 log = logging.getLogger("jobradar")
 
@@ -42,15 +43,21 @@ async def fetch_all() -> list[SourceResult]:
 
 
 def dedupe_batch(results: list[SourceResult]) -> list[RawPosting]:
-    """Cross-source dedupe within this run; first source wins."""
+    """Tech-role gate + cross-source dedupe within this run; first source wins."""
     seen: set[str] = set()
     unique: list[RawPosting] = []
+    dropped = 0
     for result in results:
         for posting in result.postings:
+            if not is_tech_role(posting.title):
+                dropped += 1
+                continue
             if posting.hash in seen:
                 continue
             seen.add(posting.hash)
             unique.append(posting)
+    if dropped:
+        log.info("tech filter: dropped %d non-tech postings", dropped)
     return unique
 
 
