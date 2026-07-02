@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# internal planning doc, not part of the public repo
+master.md
+
+# misc
+.DS_Store
+*.log
+.vercel
+.turbo
