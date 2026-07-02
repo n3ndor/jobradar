@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://jobradar.nagysolution.com"),
   title: {
     default: "JobRadar — tech job market intelligence",
     template: "%s | JobRadar",
@@ -106,10 +107,15 @@ export default function RootLayout({
 
         <footer className="border-t border-border">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-faint">
-            <p>
-              Tech roles only: engineering, data, design, and product. Data from
-              public APIs (Remotive, Arbeitnow, Greenhouse boards), refreshed
-              every 6 hours by an automated pipeline.
+            <p className="max-w-xl">
+              Tech roles only: engineering, data, design, and product. Aggregated
+              every 6 hours from{" "}
+              <a href="https://remotive.com" className="hover:text-muted">Remotive</a>,{" "}
+              <a href="https://www.arbeitnow.com" className="hover:text-muted">Arbeitnow</a>,{" "}
+              <a href="https://boards.greenhouse.io" className="hover:text-muted">Greenhouse</a>,{" "}
+              <a href="https://remoteok.com" className="hover:text-muted">RemoteOK</a>,{" "}
+              <a href="https://weworkremotely.com" className="hover:text-muted">We Work Remotely</a>, and{" "}
+              <a href="https://news.ycombinator.com" className="hover:text-muted">Hacker News</a>.
             </p>
             <p>
               <a
