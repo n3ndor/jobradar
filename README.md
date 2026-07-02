@@ -164,7 +164,9 @@ keys for a full run that writes to the database.
 - [x] Enrichment: deterministic rules + provider-agnostic LLM (Groq/Gemini)
 - [x] Dashboard: filterable feed, `/trends`, `/pipeline`, `/job/[id]`, OG image
 - [x] Test suite: 54 pytest tests (adapters mocked with respx), run in CI
-- [ ] Next: email digest opt-in, more curated boards
+
+**On the radar:** email digest · salary benchmarks by stack & region · company
+hiring velocity · ghost-job detector (postings reposted for months) · public API
 
 ---
 

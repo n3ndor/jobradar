@@ -20,7 +20,7 @@ async function loadPostings(): Promise<
   const { data, error, count } = await supabase
     .from("postings")
     .select(
-      "id, company, title, url, location_raw, posted_at, first_seen_at, sources(name), enrichments(seniority, stack, region, remote_policy, dach_friendly)",
+      "id, company, title, url, location_raw, posted_at, first_seen_at, sources(name), enrichments(seniority, stack, region, remote_policy, dach_friendly, summary, salary_min, salary_max, salary_currency)",
       { count: "exact" },
     )
     .order("first_seen_at", { ascending: false })
@@ -56,9 +56,10 @@ export default async function FeedPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Tech job feed</h1>
         <p className="mt-1 text-sm text-muted">
-          Engineering, data, design, and product roles from public job APIs,
-          deduplicated and tagged by region, remote policy, seniority, and stack.
-          No other industries — this radar only tracks tech.
+          Engineering, data, design, and product roles from public job APIs —
+          deduplicated, tagged by region, remote policy, seniority, and stack,
+          then AI-summarized with salaries parsed straight out of the posting
+          text. Tech only, no other industries.
           {result.state === "ok" && result.total > 0 && (
             <span className="ml-1 font-mono text-xs text-faint">
               {result.total.toLocaleString("en-US")} tracked

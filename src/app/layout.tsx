@@ -106,6 +106,25 @@ export default function RootLayout({
         <div className="flex-1">{children}</div>
 
         <footer className="border-t border-border">
+          <div className="mx-auto max-w-5xl px-4 pt-5">
+            <p className="flex flex-wrap items-center gap-1.5 text-xs text-faint">
+              <span className="font-mono uppercase tracking-wider">On the radar:</span>
+              {[
+                "Email digest",
+                "Salary benchmarks by stack & region",
+                "Company hiring velocity",
+                "Ghost-job detector",
+                "Public API",
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-border px-2 py-0.5 text-muted"
+                >
+                  {item}
+                </span>
+              ))}
+            </p>
+          </div>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-faint">
             <p className="max-w-xl">
               Tech roles only: engineering, data, design, and product. Aggregated
