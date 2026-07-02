@@ -14,6 +14,7 @@ trends you cannot get by scrolling job boards one listing at a time.
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres-3FCF8E?logo=supabase&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-54%20passing-3ddc97)
 ![Cost](https://img.shields.io/badge/infra%20cost-%240%2Fmonth-3ddc97)
 
 </div>
@@ -162,7 +163,8 @@ keys for a full run that writes to the database.
 - [x] Ingestion: 6 sources, tech-role filter, cross-source dedupe, cron
 - [x] Enrichment: deterministic rules + provider-agnostic LLM (Groq/Gemini)
 - [x] Dashboard: filterable feed, `/trends`, `/pipeline`, `/job/[id]`, OG image
-- [ ] Next: Python test suite, email digest opt-in, more curated boards
+- [x] Test suite: 54 pytest tests (adapters mocked with respx), run in CI
+- [ ] Next: email digest opt-in, more curated boards
 
 ---
 
