@@ -38,21 +38,37 @@ All official, public, ToS-clean APIs:
 
 - [Remotive](https://remotive.com) public API
 - [Arbeitnow](https://www.arbeitnow.com) job board API (DACH focus)
+- [Greenhouse](https://developers.greenhouse.io/job-board.html) public job boards
+  for a curated list of well-known tech companies (direct-employer, global roles)
 - Milestone 3: Hacker News "Who is hiring" (Algolia), RemoteOK (with attribution), WeWorkRemotely RSS
 
 Each source is one adapter implementing a shared protocol; a failing source never
 takes down the run, and per-source health is public on the pipeline page.
+
+## Enrichment
+
+Two layers, so filtering never depends on an LLM being reachable:
+
+1. **Rules (always on, free, instant).** Region, remote policy, seniority, DACH
+   fit, and tech-stack tags are derived deterministically from the title,
+   location, and description. This alone powers every dashboard filter.
+2. **LLM (Gemini 2.5 Flash, opportunistic).** Adds the two things rules do badly:
+   a one-line summary and a salary parsed from prose. Bounded per run, backs off
+   on rate limits, fully resumable, and skipped entirely if the key is absent so
+   the pipeline always completes on heuristic data.
 
 ## Repository layout
 
 ```
 pipeline/            Python pipeline (own pyproject.toml)
   pipeline/
-    main.py          entry point: fetch -> dedupe -> store -> record run
+    main.py          entry point: fetch -> dedupe -> store -> enrich -> record run
     models.py        pydantic models + dedupe hash
     db.py            thin Supabase wrapper, no ORM
+    enrich_rules.py  deterministic enrichment (region/remote/seniority/stack)
+    enrichment.py    Gemini LLM layer (summary + salary), gated + resumable
     sources/         one adapter per job API
-src/                 Next.js dashboard
+src/                 Next.js dashboard (feed + client-side filter/search/sort)
 supabase/migrations/ schema as SQL, RLS read-only policies for the public dashboard
 .github/workflows/   the cron that runs the pipeline
 ```
@@ -79,9 +95,9 @@ full run.
 
 ## Status
 
-- [x] Milestone 1: scaffold + ingestion (2 sources, dedupe, cron, bare feed)
-- [ ] Milestone 2: Gemini enrichment, filters, job detail, pipeline observability page
-- [ ] Milestone 3: trends charts, remaining sources, tests, polish, launch
+- [x] Milestone 1: scaffold + ingestion (dedupe, cron, feed)
+- [x] Milestone 2: 3 sources incl. Greenhouse, two-layer enrichment, filter/search/sort UI
+- [ ] Remaining: `/job` detail (raw vs. extracted), `/pipeline` observability, `/trends` charts, more sources, tests
 
 Built by [Nandor Nagy](https://github.com/n3ndor). Part of a public portfolio; the
 pipeline observability page intentionally shows the machinery instead of hiding it.

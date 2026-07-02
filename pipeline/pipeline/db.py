@@ -60,3 +60,80 @@ def mark_source_run(client: Client, source_ids: dict[str, int], names: list[str]
 
 def record_run(client: Client, metrics: RunMetrics) -> None:
     client.table("pipeline_runs").insert(metrics.to_row()).execute()
+
+
+def enriched_posting_ids(client: Client) -> set[int]:
+    """All posting ids that already have an enrichment row. Ids are cheap to page."""
+    ids: set[int] = set()
+    page = 0
+    while True:
+        rows = (
+            client.table("enrichments")
+            .select("posting_id")
+            .range(page * 1000, page * 1000 + 999)
+            .execute()
+            .data
+        )
+        if not rows:
+            break
+        ids.update(row["posting_id"] for row in rows)
+        if len(rows) < 1000:
+            break
+        page += 1
+    return ids
+
+
+def fetch_unenriched(client: Client, skip_ids: set[int], limit: int) -> list[dict]:
+    """Postings that still need enrichment, oldest first, capped to bound run time."""
+    collected: list[dict] = []
+    page = 0
+    while len(collected) < limit:
+        rows = (
+            client.table("postings")
+            .select("id, title, company, location_raw, raw")
+            .order("id")
+            .range(page * INSERT_CHUNK, page * INSERT_CHUNK + INSERT_CHUNK - 1)
+            .execute()
+            .data
+        )
+        if not rows:
+            break
+        collected.extend(r for r in rows if r["id"] not in skip_ids)
+        if len(rows) < INSERT_CHUNK:
+            break
+        page += 1
+    return collected[:limit]
+
+
+def fetch_for_llm(client: Client, limit: int) -> list[dict]:
+    """Postings whose enrichment is still heuristic-only, flattened for the LLM step."""
+    rows = (
+        client.table("enrichments")
+        .select("posting_id, postings(title, company, location_raw, raw)")
+        .eq("status", "heuristic")
+        .limit(limit)
+        .execute()
+        .data
+    )
+    out: list[dict] = []
+    for row in rows:
+        posting = row.get("postings") or {}
+        out.append(
+            {
+                "posting_id": row["posting_id"],
+                "title": posting.get("title", ""),
+                "company": posting.get("company", ""),
+                "location_raw": posting.get("location_raw", ""),
+                "raw": posting.get("raw") or {},
+            }
+        )
+    return out
+
+
+def upsert_enrichments(client: Client, rows: list[dict]) -> int:
+    written = 0
+    for i in range(0, len(rows), INSERT_CHUNK):
+        chunk = rows[i : i + INSERT_CHUNK]
+        result = client.table("enrichments").upsert(chunk, on_conflict="posting_id").execute()
+        written += len(result.data)
+    return written

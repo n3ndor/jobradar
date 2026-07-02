@@ -1,8 +1,13 @@
 import { getSupabase } from "@/lib/supabase";
-import { relativeTime } from "@/lib/format";
 import type { Posting } from "@/lib/types";
+import { FeedExplorer } from "@/components/FeedExplorer";
 
 export const revalidate = 300;
+
+// Client-side filtering runs over the newest postings. PostgREST caps a single
+// response at 1000 rows; when the dataset consistently exceeds that, move
+// filtering server-side (or paginate).
+const FEED_LIMIT = 1000;
 
 async function loadPostings(): Promise<
   | { state: "unconfigured" }
@@ -14,18 +19,24 @@ async function loadPostings(): Promise<
 
   const { data, error, count } = await supabase
     .from("postings")
-    .select("id, company, title, url, location_raw, posted_at, first_seen_at, sources(name)", {
-      count: "exact",
-    })
+    .select(
+      "id, company, title, url, location_raw, posted_at, first_seen_at, sources(name), enrichments(seniority, stack, region, remote_policy, dach_friendly)",
+      { count: "exact" },
+    )
     .order("first_seen_at", { ascending: false })
-    .limit(60);
+    .limit(FEED_LIMIT);
 
   if (error) return { state: "error", message: error.message };
-  return {
-    state: "ok",
-    postings: (data as unknown as Posting[]) ?? [],
-    total: count ?? 0,
-  };
+
+  // enrichments comes back as an array (or object) depending on relationship detection; normalize.
+  const postings = ((data as unknown as Record<string, unknown>[]) ?? []).map((row) => ({
+    ...row,
+    enrichments: Array.isArray(row.enrichments)
+      ? (row.enrichments[0] ?? null)
+      : (row.enrichments ?? null),
+  })) as Posting[];
+
+  return { state: "ok", postings, total: count ?? 0 };
 }
 
 function EmptyState({ title, body }: { title: string; body: string }) {
@@ -37,28 +48,22 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
-function SourceBadge({ name }: { name: string }) {
-  return (
-    <span className="rounded-sm border border-border bg-surface-raised px-1.5 py-0.5 font-mono text-[11px] text-muted">
-      {name}
-    </span>
-  );
-}
-
 export default async function FeedPage() {
   const result = await loadPostings();
 
   return (
     <main id="main" className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Remote job feed
-        </h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Remote job feed</h1>
         <p className="mt-1 text-sm text-muted">
-          Fresh postings from public job APIs, deduplicated across sources.
+          Postings from public job APIs, deduplicated and tagged by region, remote
+          policy, seniority, and tech stack.
           {result.state === "ok" && result.total > 0 && (
-            <span className="ml-2 font-mono text-xs text-faint">
-              {result.total.toLocaleString("en-US")} postings tracked
+            <span className="ml-1 font-mono text-xs text-faint">
+              {result.total.toLocaleString("en-US")} tracked
+              {result.total > result.postings.length &&
+                `, newest ${result.postings.length.toLocaleString("en-US")} shown`}
+              .
             </span>
           )}
         </p>
@@ -86,44 +91,7 @@ export default async function FeedPage() {
       )}
 
       {result.state === "ok" && result.postings.length > 0 && (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
-          {result.postings.map((posting) => (
-            <li key={posting.id}>
-              <a
-                href={posting.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-raised"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium leading-snug group-hover:text-accent transition-colors">
-                    {posting.title}
-                  </span>
-                  <time
-                    dateTime={posting.first_seen_at}
-                    className="shrink-0 font-mono text-xs text-faint"
-                  >
-                    {relativeTime(posting.first_seen_at)}
-                  </time>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-                  <span>{posting.company}</span>
-                  {posting.location_raw && (
-                    <>
-                      <span aria-hidden="true" className="text-faint">
-                        ·
-                      </span>
-                      <span>{posting.location_raw}</span>
-                    </>
-                  )}
-                  {posting.sources?.name && (
-                    <SourceBadge name={posting.sources.name} />
-                  )}
-                </div>
-              </a>
-            </li>
-          ))}
-        </ul>
+        <FeedExplorer postings={result.postings} />
       )}
     </main>
   );
