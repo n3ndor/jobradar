@@ -14,7 +14,7 @@ trends you cannot get by scrolling job boards one listing at a time.
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres-3FCF8E?logo=supabase&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-54%20passing-3ddc97)
+![Tests](https://img.shields.io/badge/tests-60%20passing-3ddc97)
 ![Cost](https://img.shields.io/badge/infra%20cost-%240%2Fmonth-3ddc97)
 
 </div>
@@ -33,12 +33,41 @@ listing can't:
 - **What seniority?** Junior through principal distribution.
 
 Every posting is deduplicated across sources, tagged (region, remote policy,
-seniority, tech stack), and — where a salary is stated — has it parsed out of the
-prose by an LLM. Filter and search the feed, or read the aggregate on `/trends`.
+seniority, tech stack), AI-summarized, and — where a salary is stated — has it
+parsed out of the prose. Filter and search the feed, or read the aggregate on
+`/trends`. **Every filtered search is a shareable URL**: bookmark "senior Python,
+remote, salary stated" and open it pre-applied every morning, or send it to
+someone as a link.
 
 **Scope is stated up front: tech roles only** (engineering, data, design,
 product). A shared title filter enforces this across every source, so the feed
 never surprises anyone with a sales or accounting listing.
+
+## The AI layer (read this part)
+
+Most of the pipeline is deliberately deterministic — but three things are only
+possible because an LLM reads every posting's **full description**, and they are
+the difference between this and a feed aggregator:
+
+1. **One-line summaries.** Walls of recruiter prose become a single neutral
+   sentence on every card, tagged `AI` in the UI.
+2. **Salaries parsed out of prose.** "80–95k EUR depending on experience" buried
+   in paragraph four becomes structured `salary_min/max/currency`, filterable.
+   Never invented: postings without a stated salary stay empty, and the numbers
+   show how rare published salaries really are.
+3. **A lie detector for remote tags.** Job boards flag postings as "remote" while
+   the description says *"an unseren Standorten"* or *"Available Locations:
+   Munich"*. Rules can't catch that (they only see the location field); the LLM
+   reads the whole text and overrides wrong remote/region tags with what the
+   posting actually says. Real example from production: a "Global / Remote"
+   posting corrected to *hybrid, DACH* — wrong tag, and the correction made it
+   more relevant, not less.
+
+All of it costs almost nothing extra: the description is already sent for the
+summary, so verifying tags adds ~30 output tokens per posting. The LLM is also
+never a dependency — if the key is missing or rate-limited, the pipeline
+completes on the deterministic layer and catches up later, visibly, on
+[`/pipeline`](https://jobradar.nagysolution.com/pipeline).
 
 ## Architecture
 
@@ -100,8 +129,27 @@ pipeline/frontend systems are separated.
 - **Honest extraction.** `/job/[id]` shows the raw source payload next to the
   extracted fields so anyone can judge quality. Salaries are parsed only when
   stated, never invented.
-- **$0/month.** Vercel Hobby, Supabase free tier, GitHub Actions free minutes,
-  Groq free tier. No servers, no queues, no paid APIs.
+- **Search state lives in the URL.** Filters survive the back button, and every
+  search is shareable/bookmarkable. Synced via `history.replaceState`, so typing
+  costs zero server round-trips.
+- **Always-fresh pages.** Data pages render per request instead of ISR: on a
+  low-traffic site, revalidation-based caching serves stale snapshots to nearly
+  every visitor. A ~200ms live read beats a cached lie.
+
+## Runs entirely on free tiers ($0/month)
+
+No servers, no queues, no paid APIs, no credit card anywhere in the stack:
+
+| Service | Free tier used for |
+| --- | --- |
+| GitHub Actions | the 6-hourly pipeline cron + CI test runs (~10 min/day of the 2,000 free min/month) |
+| Supabase | Postgres + row-level security, thousands of rows |
+| Vercel Hobby | Next.js hosting, per-request server rendering, OG image generation |
+| Groq | LLM enrichment (bounded per run, backs off on rate limits, resumes next run) |
+
+The free-tier constraint is treated as a design input, not a limitation to
+apologize for: bounded batches, resumable backfills, and per-source failure
+isolation exist *because* the budget is zero.
 
 ## Data sources
 
@@ -126,7 +174,7 @@ pipeline/                    Python pipeline (its own pyproject.toml)
     db.py                    thin Supabase wrapper, no ORM
     tech_filter.py           the single "is this a tech role?" definition
     enrich_rules.py          deterministic enrichment (region/remote/seniority/stack)
-    enrichment.py            LLM layer (summary + salary), gated + resumable
+    enrichment.py            LLM layer (summary + salary + tag verification), gated + resumable
     providers.py             swappable LLM providers (Groq / Gemini)
     sources/                 one adapter per job API (6)
 src/                         Next.js dashboard
@@ -162,8 +210,9 @@ keys for a full run that writes to the database.
 
 - [x] Ingestion: 6 sources, tech-role filter, cross-source dedupe, cron
 - [x] Enrichment: deterministic rules + provider-agnostic LLM (Groq/Gemini)
-- [x] Dashboard: filterable feed, `/trends`, `/pipeline`, `/job/[id]`, OG image
-- [x] Test suite: 54 pytest tests (adapters mocked with respx), run in CI
+- [x] AI tag verification: LLM corrects remote/region tags against the full description
+- [x] Dashboard: filterable feed with shareable search URLs, `/trends`, `/pipeline`, `/job/[id]`, OG image
+- [x] Test suite: 60 pytest tests (adapters mocked with respx), run in CI
 
 **On the radar:** email digest · salary benchmarks by stack & region · company
 hiring velocity · ghost-job detector (postings reposted for months) · public API
