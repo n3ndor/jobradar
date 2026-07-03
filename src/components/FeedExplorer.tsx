@@ -184,8 +184,11 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-      <aside className="space-y-5 md:sticky md:top-4 md:self-start">
+    // Portal layout at md+: the grid is viewport-bounded and the two columns
+    // scroll independently, so the page itself stays short and the footer is
+    // always within reach. Mobile keeps natural document scrolling.
+    <div className="grid gap-6 md:h-[calc(100dvh-20.5rem)] md:min-h-96 md:grid-cols-[220px_1fr] md:overflow-hidden">
+      <aside className="space-y-5 md:min-h-0 md:overflow-y-auto md:pr-2">
         <ChipGroup legend="Source" options={facets.source} selected={sources} onToggle={(v) => setSources((s) => toggle(s, v))} />
         <ChipGroup legend="Region" options={facets.region} selected={regions} onToggle={(v) => setRegions((s) => toggle(s, v))} />
         <ChipGroup legend="Remote" options={facets.remote} selected={remotes} onToggle={(v) => setRemotes((s) => toggle(s, v))} />
@@ -211,7 +214,7 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
         </label>
       </aside>
 
-      <div className="min-w-0">
+      <div className="min-w-0 md:flex md:min-h-0 md:flex-col">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <label htmlFor="feed-search" className="sr-only">
@@ -265,7 +268,7 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-surface md:min-h-0 md:flex-1 md:overflow-y-auto">
             {filtered.slice(0, RENDER_CAP).map((posting) => (
               <li
                 key={posting.id}
@@ -281,6 +284,9 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
                   <time
                     dateTime={posting.first_seen_at}
                     className="shrink-0 font-mono text-xs text-faint"
+                    // relative time can tick over between server render and
+                    // hydration; the client value is the fresher one anyway
+                    suppressHydrationWarning
                   >
                     {relativeTime(posting.first_seen_at)}
                   </time>

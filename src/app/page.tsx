@@ -55,8 +55,8 @@ export default async function FeedPage() {
   const result = await loadPostings();
 
   return (
-    <main id="main" className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-6">
+    <main id="main" className="mx-auto max-w-5xl px-4 py-6">
+      <div className="mb-5">
         <h1 className="text-2xl font-semibold tracking-tight">Tech job feed</h1>
         <p className="mt-1 text-sm text-muted">
           Engineering, data, design, and product roles from public job APIs —

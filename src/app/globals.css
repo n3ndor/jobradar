@@ -46,3 +46,8 @@ body {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
