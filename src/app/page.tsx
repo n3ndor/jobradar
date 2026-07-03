@@ -2,7 +2,10 @@ import { getSupabase } from "@/lib/supabase";
 import type { Posting } from "@/lib/types";
 import { FeedExplorer } from "@/components/FeedExplorer";
 
-export const revalidate = 300;
+// Render on every request: with ISR, low-traffic sites serve the previous
+// (stale) snapshot to nearly every visitor. A fresh Supabase read costs
+// ~200ms and guarantees the feed is current on first load.
+export const dynamic = "force-dynamic";
 
 // Client-side filtering runs over the newest postings. PostgREST caps a single
 // response at 1000 rows; when the dataset consistently exceeds that, move

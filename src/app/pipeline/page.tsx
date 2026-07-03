@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSupabase } from "@/lib/supabase";
 import { relativeTime } from "@/lib/format";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Pipeline",
