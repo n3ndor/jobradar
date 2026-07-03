@@ -35,34 +35,64 @@ function ChipGroup({
   selected: Set<string>;
   onToggle: (value: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
   if (options.length === 0) return null;
+  // Collapsed groups still show their selected chips, so an active filter is
+  // always visible (and removable) without opening the group.
+  const shown = open ? options : options.filter((opt) => selected.has(opt.value));
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-faint">
-        {legend}
+      <legend className="w-full">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex w-full items-center gap-1.5 rounded py-0.5 font-mono text-[11px] uppercase tracking-wider text-faint transition-colors hover:text-muted"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            className={
+              "size-3 shrink-0 transition-transform " + (open ? "rotate-90" : "")
+            }
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {legend}
+          {selected.size > 0 && (
+            <span className="rounded-full border border-accent/40 bg-accent/15 px-1.5 text-[10px] normal-case text-accent">
+              {selected.size}
+            </span>
+          )}
+        </button>
       </legend>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((opt) => {
-          const active = selected.has(opt.value);
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onToggle(opt.value)}
-              className={
-                "rounded-full border px-2.5 py-1 text-xs transition-colors " +
-                (active
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface text-muted hover:border-border-strong hover:text-foreground")
-              }
-            >
-              {opt.label}
-              <span className="ml-1 text-[10px] text-faint">{opt.count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {shown.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {shown.map((opt) => {
+            const active = selected.has(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onToggle(opt.value)}
+                className={
+                  "rounded-full border px-2.5 py-1 text-xs transition-colors " +
+                  (active
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border bg-surface text-muted hover:border-border-strong hover:text-foreground")
+                }
+              >
+                {opt.label}
+                <span className="ml-1 text-[10px] text-faint">{opt.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </fieldset>
   );
 }
@@ -188,7 +218,7 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
     // scroll independently, so the page itself stays short and the footer is
     // always within reach. Mobile keeps natural document scrolling.
     <div className="grid gap-6 md:h-[calc(100dvh-20.5rem)] md:min-h-96 md:grid-cols-[220px_1fr] md:overflow-hidden">
-      <aside className="space-y-5 md:min-h-0 md:overflow-y-auto md:pr-2">
+      <aside className="space-y-3 md:min-h-0 md:overflow-y-auto md:pr-2">
         <ChipGroup legend="Source" options={facets.source} selected={sources} onToggle={(v) => setSources((s) => toggle(s, v))} />
         <ChipGroup legend="Region" options={facets.region} selected={regions} onToggle={(v) => setRegions((s) => toggle(s, v))} />
         <ChipGroup legend="Remote" options={facets.remote} selected={remotes} onToggle={(v) => setRemotes((s) => toggle(s, v))} />
