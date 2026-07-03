@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { Posting } from "@/lib/types";
 import { formatSalary, relativeTime } from "@/lib/format";
 
@@ -67,15 +68,43 @@ function ChipGroup({
 }
 
 export function FeedExplorer({ postings }: { postings: Posting[] }) {
-  const [search, setSearch] = useState("");
-  const [regions, setRegions] = useState<Set<string>>(new Set());
-  const [remotes, setRemotes] = useState<Set<string>>(new Set());
-  const [seniorities, setSeniorities] = useState<Set<string>>(new Set());
-  const [sources, setSources] = useState<Set<string>>(new Set());
-  const [stacks, setStacks] = useState<Set<string>>(new Set());
-  const [dachOnly, setDachOnly] = useState(false);
-  const [salaryOnly, setSalaryOnly] = useState(false);
-  const [sort, setSort] = useState<Sort>("newest");
+  // Filter state lives in the URL so it survives back navigation and makes
+  // searches shareable. The page is rendered dynamically, so the server sees
+  // the same params and the initial render matches on hydration.
+  const params = useSearchParams();
+  const fromParam = (key: string) =>
+    new Set((params.get(key) ?? "").split(",").filter(Boolean));
+
+  const [search, setSearch] = useState(params.get("q") ?? "");
+  const [regions, setRegions] = useState<Set<string>>(() => fromParam("region"));
+  const [remotes, setRemotes] = useState<Set<string>>(() => fromParam("remote"));
+  const [seniorities, setSeniorities] = useState<Set<string>>(() => fromParam("seniority"));
+  const [sources, setSources] = useState<Set<string>>(() => fromParam("source"));
+  const [stacks, setStacks] = useState<Set<string>>(() => fromParam("stack"));
+  const [dachOnly, setDachOnly] = useState(params.get("dach") === "1");
+  const [salaryOnly, setSalaryOnly] = useState(params.get("salary") === "1");
+  const [sort, setSort] = useState<Sort>(params.get("sort") === "oldest" ? "oldest" : "newest");
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (search) next.set("q", search);
+    for (const [key, set] of [
+      ["region", regions],
+      ["remote", remotes],
+      ["seniority", seniorities],
+      ["source", sources],
+      ["stack", stacks],
+    ] as const) {
+      if (set.size) next.set(key, [...set].join(","));
+    }
+    if (dachOnly) next.set("dach", "1");
+    if (salaryOnly) next.set("salary", "1");
+    if (sort !== "newest") next.set("sort", sort);
+    const qs = next.toString();
+    // replaceState instead of router.replace: updates the URL without a server
+    // round-trip, and Next keeps useSearchParams in sync.
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  }, [search, regions, remotes, seniorities, sources, stacks, dachOnly, salaryOnly, sort]);
 
   const facets = useMemo(() => {
     const count = (fn: (p: Posting) => string | null | undefined) => {

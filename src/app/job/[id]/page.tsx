@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import { relativeTime } from "@/lib/format";
+import { BackToFeed } from "@/components/BackToFeed";
 
 export const revalidate = 300;
 
@@ -111,9 +111,7 @@ export default async function JobDetailPage({ params }: Props) {
   return (
     <main id="main" className="mx-auto max-w-5xl px-4 py-10">
       <nav aria-label="Breadcrumb" className="mb-6 text-sm">
-        <Link href="/" className="text-muted hover:text-foreground">
-          ← Back to feed
-        </Link>
+        <BackToFeed />
       </nav>
 
       <header className="mb-8">
