@@ -106,11 +106,17 @@ def fetch_unenriched(client: Client, skip_ids: set[int], limit: int) -> list[dic
 
 
 def fetch_for_llm(client: Client, limit: int) -> list[dict]:
-    """Postings whose enrichment is still heuristic-only, flattened for the LLM step."""
+    """Postings whose enrichment is still heuristic-only, flattened for the LLM step.
+    Newest first: those sit at the top of the feed, where a wrong heuristic tag is
+    most visible. Current heuristic values ride along as fallbacks for the upsert."""
     rows = (
         client.table("enrichments")
-        .select("posting_id, postings(title, company, location_raw, raw)")
+        .select(
+            "posting_id, remote_policy, region, dach_friendly, "
+            "postings(title, company, location_raw, raw)"
+        )
         .eq("status", "heuristic")
+        .order("posting_id", desc=True)
         .limit(limit)
         .execute()
         .data
@@ -125,6 +131,9 @@ def fetch_for_llm(client: Client, limit: int) -> list[dict]:
                 "company": posting.get("company", ""),
                 "location_raw": posting.get("location_raw", ""),
                 "raw": posting.get("raw") or {},
+                "remote_policy": row.get("remote_policy"),
+                "region": row.get("region"),
+                "dach_friendly": row.get("dach_friendly"),
             }
         )
     return out

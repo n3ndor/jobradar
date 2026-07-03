@@ -27,6 +27,12 @@ GEMINI_ENDPOINT = (
 )
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
+REMOTE_POLICIES = ["remote", "hybrid", "onsite", "unknown"]
+REGIONS = [
+    "DACH", "UK & Ireland", "Europe", "US", "Canada", "APAC", "LATAM",
+    "Global / Remote", "Other",
+]
+
 # Gemini enforces this natively; for Groq the shape is described in the prompt.
 GEMINI_SCHEMA = {
     "type": "OBJECT",
@@ -35,8 +41,10 @@ GEMINI_SCHEMA = {
         "salary_min": {"type": "INTEGER", "nullable": True},
         "salary_max": {"type": "INTEGER", "nullable": True},
         "salary_currency": {"type": "STRING", "nullable": True},
+        "remote_policy": {"type": "STRING", "enum": REMOTE_POLICIES},
+        "region": {"type": "STRING", "enum": REGIONS},
     },
-    "required": ["summary"],
+    "required": ["summary", "remote_policy", "region"],
 }
 
 
@@ -45,6 +53,8 @@ class LlmResult(BaseModel):
     salary_min: int | None = None
     salary_max: int | None = None
     salary_currency: str | None = None
+    remote_policy: str | None = None
+    region: str | None = None
 
 
 class KeyDenied(Exception):
