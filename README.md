@@ -14,7 +14,7 @@ trends you cannot get by scrolling job boards one listing at a time.
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres-3FCF8E?logo=supabase&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-60%20passing-3ddc97)
+![Tests](https://img.shields.io/badge/tests-56%2B13%20passing-3ddc97)
 ![Cost](https://img.shields.io/badge/infra%20cost-%240%2Fmonth-3ddc97)
 
 </div>
@@ -123,9 +123,15 @@ pipeline/frontend systems are separated.
 - **Designed for free-tier reality.** LLM enrichment is bounded per run, backs off
   on 429s, and is fully resumable. A run that enriches only part of the backlog is
   a normal, visible state — surfaced on `/pipeline`, not hidden.
+- **The ingestion layer is my own open-source package.** The six source
+  adapters were extracted into [**jobfeeds**](https://github.com/n3ndor/jobfeeds)
+  (`pip install jobfeeds`) and this pipeline now depends on it like any other
+  consumer. What stays in this repo is product policy (which Greenhouse
+  boards, the tech-role filter); feed access is the package's job. Extracting
+  a real library from a working system, then dogfooding it, was the point.
 - **Independent source failure.** Each source is one adapter behind a shared
-  protocol; one API dying never takes down the run, and per-source health is
-  public on `/pipeline`.
+  protocol (jobfeeds' `fetch_all`); one API dying never takes down the run,
+  and per-source health is public on `/pipeline`.
 - **Honest extraction.** `/job/[id]` shows the raw source payload next to the
   extracted fields so anyone can judge quality. Salaries are parsed only when
   stated, never invented.
@@ -176,7 +182,8 @@ pipeline/                    Python pipeline (its own pyproject.toml)
     enrich_rules.py          deterministic enrichment (region/remote/seniority/stack)
     enrichment.py            LLM layer (summary + salary + tag verification), gated + resumable
     providers.py             swappable LLM providers (Groq / Gemini)
-    sources/                 one adapter per job API (6)
+    sources.py               source configuration; adapters live in the
+                             jobfeeds package (github.com/n3ndor/jobfeeds)
 src/                         Next.js dashboard
   app/                       feed, /trends, /pipeline, /job/[id], OG image
   components/FeedExplorer    client-side search / faceted filters / sort
@@ -208,11 +215,11 @@ keys for a full run that writes to the database.
 
 ## Status
 
-- [x] Ingestion: 6 sources, tech-role filter, cross-source dedupe, cron
+- [x] Ingestion: 6 sources via the jobfeeds package, tech-role filter, cross-source dedupe, cron
 - [x] Enrichment: deterministic rules + provider-agnostic LLM (Groq/Gemini)
 - [x] AI tag verification: LLM corrects remote/region tags against the full description
 - [x] Dashboard: filterable feed with shareable search URLs, `/trends`, `/pipeline`, `/job/[id]`, OG image
-- [x] Test suite: 60 pytest tests (adapters mocked with respx), run in CI
+- [x] Test suite: 56 pipeline tests here + 13 adapter tests in the jobfeeds package (all HTTP mocked with respx), run in CI
 
 **On the radar:** email digest · salary benchmarks by stack & region · company
 hiring velocity · ghost-job detector (postings reposted for months) · public API

@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: jobradar-pipeline
+Version: 0.1.0
+Summary: JobRadar ingestion pipeline: fetch remote job postings, dedupe, enrich with Gemini, store in Supabase
+Requires-Python: >=3.12
+Requires-Dist: httpx>=0.27
+Requires-Dist: jobfeeds>=0.1.0
+Requires-Dist: pydantic>=2.8
+Requires-Dist: supabase>=2.6
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
+Requires-Dist: respx>=0.21; extra == "dev"

@@ -13,6 +13,8 @@ import logging
 import sys
 from datetime import datetime, timezone
 
+import jobfeeds
+
 from . import db, enrich_rules
 from .config import load_env
 from .enrichment import MAX_PER_RUN as LLM_PER_RUN, enrich_with_llm
@@ -28,18 +30,15 @@ ENRICH_LIMIT = 1500
 
 
 async def fetch_all() -> list[SourceResult]:
-    """Run every adapter; one failing source never takes down the run."""
-
-    async def run_one(source) -> SourceResult:
-        try:
-            postings = await source.fetch()
-            log.info("%-12s fetched %d postings", source.name, len(postings))
-            return SourceResult(source=source.name, postings=postings)
-        except Exception as exc:  # noqa: BLE001 - per-source isolation is the point
-            log.error("%-12s FAILED: %s", source.name, exc)
-            return SourceResult(source=source.name, error=str(exc))
-
-    return list(await asyncio.gather(*(run_one(s) for s in ALL_SOURCES)))
+    """Fetch every source via jobfeeds (our own OSS package); failure
+    isolation lives in the package, this wrapper only adds logging."""
+    results = await jobfeeds.fetch_all(ALL_SOURCES)
+    for r in results:
+        if r.ok:
+            log.info("%-12s fetched %d postings", r.source, len(r.postings))
+        else:
+            log.error("%-12s FAILED: %s", r.source, r.error)
+    return results
 
 
 def dedupe_batch(results: list[SourceResult]) -> list[RawPosting]:

@@ -1,62 +1,30 @@
-"""Pydantic models shared across the pipeline."""
+"""Models: postings and per-source results come from jobfeeds, the package
+extracted from this pipeline. JobRadar adds only what the product needs on
+top: the database row mapping and run metrics."""
 
 from __future__ import annotations
 
-import hashlib
-import re
 from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field, HttpUrl
+from jobfeeds import Posting as RawPosting, SourceResult, posting_hash
+from pydantic import BaseModel, Field
+
+__all__ = ["RawPosting", "SourceResult", "posting_hash", "posting_row", "RunMetrics"]
 
 
-def _normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip().lower()
-
-
-def posting_hash(company: str, title: str, location_raw: str) -> str:
-    """Cross-source dedupe key: same company + title + normalized location."""
-    key = "|".join((_normalize(company), _normalize(title), _normalize(location_raw)))
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
-
-class RawPosting(BaseModel):
-    source: str
-    external_id: str
-    company: str
-    title: str
-    url: HttpUrl
-    location_raw: str = ""
-    posted_at: datetime | None = None
-    raw: dict = Field(default_factory=dict)
-
-    @property
-    def hash(self) -> str:
-        return posting_hash(self.company, self.title, self.location_raw)
-
-    def to_row(self, source_id: int) -> dict:
-        return {
-            "source_id": source_id,
-            "external_id": self.external_id,
-            "hash": self.hash,
-            "company": self.company,
-            "title": self.title,
-            "url": str(self.url),
-            "location_raw": self.location_raw,
-            "posted_at": self.posted_at.isoformat() if self.posted_at else None,
-            "raw": self.raw,
-        }
-
-
-class SourceResult(BaseModel):
-    """Outcome of one adapter's fetch, success or failure."""
-
-    source: str
-    postings: list[RawPosting] = Field(default_factory=list)
-    error: str | None = None
-
-    @property
-    def ok(self) -> bool:
-        return self.error is None
+def posting_row(posting: RawPosting, source_id: int) -> dict:
+    """Map a jobfeeds Posting onto the postings table schema."""
+    return {
+        "source_id": source_id,
+        "external_id": posting.external_id,
+        "hash": posting.hash,
+        "company": posting.company,
+        "title": posting.title,
+        "url": str(posting.url),
+        "location_raw": posting.location_raw,
+        "posted_at": posting.posted_at.isoformat() if posting.posted_at else None,
+        "raw": posting.raw,
+    }
 
 
 class RunMetrics(BaseModel):

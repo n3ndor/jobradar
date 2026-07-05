@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from supabase import Client, create_client
 
 from .config import require
-from .models import RawPosting, RunMetrics
+from .models import RawPosting, RunMetrics, posting_row
 
 INSERT_CHUNK = 200
 
@@ -46,7 +46,7 @@ def insert_postings(client: Client, postings: list[RawPosting], source_ids: dict
     inserted = 0
     for i in range(0, len(postings), INSERT_CHUNK):
         chunk = postings[i : i + INSERT_CHUNK]
-        rows = [p.to_row(source_ids[p.source]) for p in chunk]
+        rows = [posting_row(p, source_ids[p.source]) for p in chunk]
         result = client.table("postings").upsert(rows, on_conflict="hash", ignore_duplicates=True).execute()
         inserted += len(result.data)
     return inserted

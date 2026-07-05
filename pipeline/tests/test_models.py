@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from pipeline.models import RawPosting, RunMetrics, posting_hash
+from pipeline.models import RawPosting, RunMetrics, posting_hash, posting_row
 
 
 def test_hash_is_stable_and_normalized():
@@ -26,7 +26,7 @@ def test_rawposting_hash_and_row():
         url="https://example.com/jobs/42",
         location_raw="Remote",
     )
-    row = p.to_row(source_id=7)
+    row = posting_row(p, source_id=7)
     assert row["source_id"] == 7
     assert row["hash"] == p.hash
     assert row["url"] == "https://example.com/jobs/42"
