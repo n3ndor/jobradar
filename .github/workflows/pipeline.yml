@@ -17,7 +17,10 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Enrichment shares the Groq key with the CareerRAG chat; when quota is
+    # tight the 429 backoffs stretch a run past 15 minutes and the job died
+    # as "cancelled" without recording its run metrics.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: pipeline
