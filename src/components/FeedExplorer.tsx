@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import type { Posting } from "@/lib/types";
 import { formatSalary, relativeTime } from "@/lib/format";
 
@@ -99,23 +98,41 @@ function ChipGroup({
 
 export function FeedExplorer({ postings }: { postings: Posting[] }) {
   // Filter state lives in the URL so it survives back navigation and makes
-  // searches shareable. The page is rendered dynamically, so the server sees
-  // the same params and the initial render matches on hydration.
-  const params = useSearchParams();
-  const fromParam = (key: string) =>
-    new Set((params.get(key) ?? "").split(",").filter(Boolean));
-
-  const [search, setSearch] = useState(params.get("q") ?? "");
-  const [regions, setRegions] = useState<Set<string>>(() => fromParam("region"));
-  const [remotes, setRemotes] = useState<Set<string>>(() => fromParam("remote"));
-  const [seniorities, setSeniorities] = useState<Set<string>>(() => fromParam("seniority"));
-  const [sources, setSources] = useState<Set<string>>(() => fromParam("source"));
-  const [stacks, setStacks] = useState<Set<string>>(() => fromParam("stack"));
-  const [dachOnly, setDachOnly] = useState(params.get("dach") === "1");
-  const [salaryOnly, setSalaryOnly] = useState(params.get("salary") === "1");
-  const [sort, setSort] = useState<Sort>(params.get("sort") === "oldest" ? "oldest" : "newest");
+  // searches shareable. The page is a cached static render, so the server
+  // renders the unfiltered list and the URL filters are applied after mount.
+  const [search, setSearch] = useState("");
+  const [regions, setRegions] = useState<Set<string>>(() => new Set());
+  const [remotes, setRemotes] = useState<Set<string>>(() => new Set());
+  const [seniorities, setSeniorities] = useState<Set<string>>(() => new Set());
+  const [sources, setSources] = useState<Set<string>>(() => new Set());
+  const [stacks, setStacks] = useState<Set<string>>(() => new Set());
+  const [dachOnly, setDachOnly] = useState(false);
+  const [salaryOnly, setSalaryOnly] = useState(false);
+  const [sort, setSort] = useState<Sort>("newest");
+  const [urlRead, setUrlRead] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = (key: string) =>
+      new Set((params.get(key) ?? "").split(",").filter(Boolean));
+    // One-time read after hydration: the cached server render cannot see the URL.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearch(params.get("q") ?? "");
+    setRegions(fromParam("region"));
+    setRemotes(fromParam("remote"));
+    setSeniorities(fromParam("seniority"));
+    setSources(fromParam("source"));
+    setStacks(fromParam("stack"));
+    setDachOnly(params.get("dach") === "1");
+    setSalaryOnly(params.get("salary") === "1");
+    setSort(params.get("sort") === "oldest" ? "oldest" : "newest");
+    setUrlRead(true);
+  }, []);
+
+  useEffect(() => {
+    // Until the URL has been read, the state is the server default and would
+    // wipe a shared link's filters.
+    if (!urlRead) return;
     const next = new URLSearchParams();
     if (search) next.set("q", search);
     for (const [key, set] of [
@@ -132,9 +149,9 @@ export function FeedExplorer({ postings }: { postings: Posting[] }) {
     if (sort !== "newest") next.set("sort", sort);
     const qs = next.toString();
     // replaceState instead of router.replace: updates the URL without a server
-    // round-trip, and Next keeps useSearchParams in sync.
+    // round-trip.
     window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
-  }, [search, regions, remotes, seniorities, sources, stacks, dachOnly, salaryOnly, sort]);
+  }, [urlRead, search, regions, remotes, seniorities, sources, stacks, dachOnly, salaryOnly, sort]);
 
   const facets = useMemo(() => {
     const count = (fn: (p: Posting) => string | null | undefined) => {

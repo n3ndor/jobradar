@@ -2,10 +2,11 @@ import { getSupabase } from "@/lib/supabase";
 import type { Posting } from "@/lib/types";
 import { FeedExplorer } from "@/components/FeedExplorer";
 
-// Render on every request: with ISR, low-traffic sites serve the previous
-// (stale) snapshot to nearly every visitor. A fresh Supabase read costs
-// ~200ms and guarantees the feed is current on first load.
-export const dynamic = "force-dynamic";
+// Cached for an hour. Rendering on every request read ~650 KB from Supabase per
+// visit (bots included) and, together with the pipeline, pushed the project
+// over the free 5 GB egress quota in October 2026. The pipeline only writes
+// every 6 hours, so an hour-old snapshot is at most one run behind.
+export const revalidate = 3600;
 
 // Client-side filtering runs over the newest postings. PostgREST caps a single
 // response at 1000 rows; when the dataset consistently exceeds that, move

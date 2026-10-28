@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getSupabase } from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
+// Cached for an hour to keep Supabase egress down; see the note in app/page.tsx.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Trends",
