@@ -84,25 +84,43 @@ def enriched_posting_ids(client: Client) -> set[int]:
 
 
 def fetch_unenriched(client: Client, skip_ids: set[int], limit: int) -> list[dict]:
-    """Postings that still need enrichment, oldest first, capped to bound run time."""
-    collected: list[dict] = []
+    """Postings that still need enrichment, oldest first, capped to bound run time.
+
+    Pages through ids only and loads `raw` just for the missing ones. Paging the
+    full rows read every posting's raw JSON on each run (about 135 MB at 25k
+    postings) and blew the Supabase free egress quota in October 2026.
+    """
+    missing: list[int] = []
     page = 0
-    while len(collected) < limit:
+    while len(missing) < limit:
         rows = (
             client.table("postings")
-            .select("id, title, company, location_raw, raw")
+            .select("id")
             .order("id")
-            .range(page * INSERT_CHUNK, page * INSERT_CHUNK + INSERT_CHUNK - 1)
+            .range(page * 1000, page * 1000 + 999)
             .execute()
             .data
         )
         if not rows:
             break
-        collected.extend(r for r in rows if r["id"] not in skip_ids)
-        if len(rows) < INSERT_CHUNK:
+        missing.extend(r["id"] for r in rows if r["id"] not in skip_ids)
+        if len(rows) < 1000:
             break
         page += 1
-    return collected[:limit]
+    missing = missing[:limit]
+
+    collected: list[dict] = []
+    for i in range(0, len(missing), INSERT_CHUNK):
+        chunk = missing[i : i + INSERT_CHUNK]
+        collected.extend(
+            client.table("postings")
+            .select("id, title, company, location_raw, raw")
+            .in_("id", chunk)
+            .order("id")
+            .execute()
+            .data
+        )
+    return collected
 
 
 def fetch_for_llm(client: Client, limit: int) -> list[dict]:
